@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Smart Notes — Studynest{% endblock %}
+{% block content %}
+
+<div class="px-10 py-9 max-w-3xl">
+  <a href="{{ url_for('pdf_detail', pdf_id=pdf.id) }}" class="inline-flex items-center gap-1.5 text-sm text-ocean/70 hover:text-deep mb-5 transition-colors">
+    <span data-lucide="arrow-left" class="w-4 h-4"></span> Back to {{ pdf.title }}
+  </a>
+
+  <h1 class="font-display text-2xl font-semibold text-deep tracking-tight mb-1 fade-up">Smart notes</h1>
+  <p class="text-ocean/70 mb-7 fade-up">Generate study notes in the format you need.</p>
+
+  <div class="grid grid-cols-4 gap-3 mb-8 stagger">
+    {% for val, label, icon, desc in [
+      ('summary','One-page summary','file-text','Flowing overview'),
+      ('bullets','Bullet notes','list','Organized by topic'),
+      ('exam','Exam revision','graduation-cap','Key facts & terms'),
+      ('cheatsheet','Cheat sheet','zap','Last-minute essentials'),
+    ] %}
+    <button onclick="generateNote('{{ val }}', this)" class="card card-hover p-4 text-left">
+      <span data-lucide="{{ icon }}" class="w-5 h-5 text-ocean mb-2 block"></span>
+      <div class="font-semibold text-sm text-ink">{{ label }}</div>
+      <div class="text-xs text-ocean/60">{{ desc }}</div>
+    </button>
+    {% endfor %}
+  </div>
+
+  <div id="note-output"></div>
+
+  {% if notes %}
+  <h2 class="font-display text-lg font-semibold text-deep mb-4 mt-8">Previously generated</h2>
+  <div class="flex flex-col gap-3">
+    {% for n in notes %}
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-3">
+        <span class="chip capitalize">{{ n.note_type }}</span>
+        <span class="text-xs text-ocean/50">{{ n.created_at[:10] }}</span>
+      </div>
+      <div class="prose-notes text-sm text-ink/85">{{ n.content|safe }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<script>
+async function generateNote(type, btn) {
+  const original = btn.innerHTML;
+  btn.innerHTML = `<svg class="animate-spin w-5 h-5 text-ocean mb-2" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><div class="font-semibold text-sm text-ink">Generating…</div>`;
+
+  try {
+    const resp = await fetch(`/notes/{{ pdf.id }}/generate`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ note_type: type })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Could not generate notes.');
+
+    const output = document.getElementById('note-output');
+    output.innerHTML = `<div class="card p-6 fade-up mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <span class="chip capitalize">${type}</span>
+        <button onclick="window.print()" class="text-sm font-medium text-ocean hover:text-deep transition-colors flex items-center gap-1.5">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print
+        </button>
+      </div>
+      <div class="prose-notes text-sm text-ink/85">${markdownToHtml(data.content)}</div>
+    </div>`;
+    output.scrollIntoView({behavior:'smooth'});
+    showToast('Notes generated!', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.innerHTML = original;
+    lucide.createIcons();
+  }
+}
+
+function markdownToHtml(md) {
+  let html = md
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h2>$1</h2>')
+    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+    .replace(/^- (.*$)/gim, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/gim, (m) => `<ul>${m}</ul>`);
+  html = html.split('\n\n').map(p => (p.startsWith('<h2') || p.startsWith('<ul')) ? p : `<p>${p}</p>`).join('');
+  return html;
+}
+</script>
+{% endblock %}

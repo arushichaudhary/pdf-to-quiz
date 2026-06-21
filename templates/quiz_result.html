@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Quiz Result — Studynest{% endblock %}
+{% block content %}
+
+<div class="px-10 py-9 max-w-3xl">
+
+  <!-- Score hero -->
+  <div class="card p-9 text-center mb-7 fade-up bg-gradient-to-br from-white to-mist">
+    {% set pct = (100 * attempt.score / attempt.total)|round|int if attempt.total else 0 %}
+    <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-sky to-ocean flex items-center justify-center shadow-lift">
+      <span class="font-display text-2xl font-bold text-white">{{ pct }}%</span>
+    </div>
+    <h1 class="font-display text-2xl font-semibold text-deep mb-1">
+      {% if pct >= 90 %}Outstanding work!{% elif pct >= 70 %}Nice job!{% elif pct >= 50 %}Good effort.{% else %}Keep practicing.{% endif %}
+    </h1>
+    <p class="text-ocean/70">You scored {{ attempt.score }} out of {{ attempt.total }}{% if attempt.time_taken_sec %} in {{ (attempt.time_taken_sec // 60) }}m {{ attempt.time_taken_sec % 60 }}s{% endif %}</p>
+  </div>
+
+  <!-- Topic breakdown -->
+  {% if topic_breakdown %}
+  <div class="card p-6 mb-6 fade-up">
+    <h2 class="font-display text-lg font-semibold text-deep mb-4">Topic breakdown</h2>
+    <div class="flex flex-col gap-3">
+      {% for topic, stats in topic_breakdown.items() %}
+      {% set tpct = (100 * stats.correct / stats.total)|round|int if stats.total else 0 %}
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="font-medium text-ink">{{ topic }}</span>
+          <span class="text-ocean/60">{{ stats.correct }}/{{ stats.total }}</span>
+        </div>
+        <div class="progress-track h-2">
+          <div class="progress-fill h-full" style="width:{{ tpct }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Review -->
+  <div class="card p-6 mb-6 fade-up">
+    <h2 class="font-display text-lg font-semibold text-deep mb-4">Review answers</h2>
+    <div class="flex flex-col gap-3">
+      {% for q in questions %}
+      {% set is_wrong = wrong|selectattr('index', 'equalto', loop.index0)|list %}
+      <div class="p-4 rounded-xl border {{ 'border-red-200 bg-red-50/40' if is_wrong else 'border-green-200 bg-green-50/40' }}">
+        <div class="flex items-start gap-2.5">
+          <span data-lucide="{{ 'x-circle' if is_wrong else 'check-circle' }}" class="w-4.5 h-4.5 {{ 'text-red-500' if is_wrong else 'text-green-500' }} shrink-0 mt-0.5"></span>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-ink mb-1">{{ q.question }}</p>
+            {% if q.explanation %}<p class="text-xs text-ocean/70">{{ q.explanation }}</p>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="flex gap-3 fade-up">
+    <a href="{{ url_for('revision_mode', pdf_id=quiz.pdf_id) }}" class="btn-secondary flex-1 text-center">Revise weak topics</a>
+    <a href="{{ url_for('pdf_detail', pdf_id=quiz.pdf_id) }}" class="btn-primary flex-1 text-center">Back to document</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}{{ pdf.title }} — Studynest{% endblock %}
+{% block content %}
+
+<div class="px-10 py-9 max-w-6xl">
+
+  <a href="{{ url_for('library') }}" class="inline-flex items-center gap-1.5 text-sm text-ocean/70 hover:text-deep mb-5 transition-colors">
+    <span data-lucide="arrow-left" class="w-4 h-4"></span> Back to library
+  </a>
+
+  <div class="flex items-start justify-between mb-7 fade-up">
+    <div class="flex items-start gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky to-ocean flex items-center justify-center shadow-soft shrink-0">
+        <span data-lucide="file-text" class="w-7 h-7 text-white"></span>
+      </div>
+      <div>
+        <h1 class="font-display text-2xl font-semibold text-deep tracking-tight mb-1">{{ pdf.title }}</h1>
+        <p class="text-sm text-ocean/60">{{ pdf.page_count }} pages · {{ pdf.word_count }} words · uploaded {{ pdf.created_at[:10] }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action grid -->
+  <div class="grid grid-cols-4 gap-4 mb-8 stagger">
+    <a href="{{ url_for('new_quiz', pdf_id=pdf.id) }}" class="card card-hover p-5">
+      <span data-lucide="list-checks" class="w-6 h-6 text-ocean mb-3 block"></span>
+      <div class="font-semibold text-sm text-ink mb-0.5">Generate quiz</div>
+      <div class="text-xs text-ocean/60">MCQ, T/F, fill-blank & more</div>
+    </a>
+    <button data-ai-action="{{ url_for('generate_flashcards', pdf_id=pdf.id) }}" data-body='{"count":12}' data-on-success="onFlashcardsGenerated" class="card card-hover p-5 text-left w-full">
+      <span data-lucide="layers" class="w-6 h-6 text-ocean mb-3 block"></span>
+      <div class="font-semibold text-sm text-ink mb-0.5">Generate flashcards</div>
+      <div class="text-xs text-ocean/60">{{ flashcard_count }} cards so far</div>
+    </button>
+    <a href="{{ url_for('tutor_page', pdf_id=pdf.id) }}" class="card card-hover p-5">
+      <span data-lucide="bot" class="w-6 h-6 text-ocean mb-3 block"></span>
+      <div class="font-semibold text-sm text-ink mb-0.5">Ask AI Tutor</div>
+      <div class="text-xs text-ocean/60">Chat using only this document</div>
+    </a>
+    <a href="{{ url_for('notes_page', pdf_id=pdf.id) }}" class="card card-hover p-5">
+      <span data-lucide="notebook-pen" class="w-6 h-6 text-ocean mb-3 block"></span>
+      <div class="font-semibold text-sm text-ink mb-0.5">Smart notes</div>
+      <div class="text-xs text-ocean/60">{{ notes|length }} generated</div>
+    </a>
+  </div>
+
+  <div class="grid grid-cols-3 gap-6">
+    <!-- Analysis -->
+    <div class="col-span-2 card p-6 fade-up">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display text-lg font-semibold text-deep">Smart analysis</h2>
+        {% if not topics %}
+        <button data-ai-action="{{ url_for('analyze_pdf', pdf_id=pdf.id) }}" class="btn-primary text-sm inline-flex items-center gap-2">
+          <span data-lucide="sparkles" class="w-4 h-4"></span> Analyze with AI
+        </button>
+        {% else %}
+        <button data-ai-action="{{ url_for('analyze_pdf', pdf_id=pdf.id) }}" class="text-sm font-medium text-ocean hover:text-deep transition-colors">Re-analyze</button>
+        {% endif %}
+      </div>
+
+      {% if topics %}
+      <p class="text-sm text-ink/80 leading-relaxed mb-5">{{ pdf.summary }}</p>
+
+      <div class="mb-5">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-ocean/60 mb-2">Important topics</h3>
+        <div class="flex flex-wrap gap-2">
+          {% for t in topics %}<span class="chip">{{ t }}</span>{% endfor %}
+        </div>
+      </div>
+
+      {% if definitions %}
+      <div class="mb-5">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-ocean/60 mb-2">Key definitions</h3>
+        <div class="flex flex-col gap-2">
+          {% for d in definitions %}
+          <div class="p-3 rounded-xl bg-mist text-sm">
+            <span class="font-semibold text-deep">{{ d.term }}:</span>
+            <span class="text-ink/80">{{ d.definition }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if formulas %}
+      <div>
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-ocean/60 mb-2">Formulas</h3>
+        <div class="flex flex-col gap-2">
+          {% for f in formulas %}
+          <div class="p-3 rounded-xl bg-deep/5 text-sm">
+            <div class="font-mono font-semibold text-deep">{{ f.expression }}</div>
+            <div class="text-xs text-ocean/70 mt-0.5">{{ f.name }} — {{ f.context }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="text-center py-8">
+        <span data-lucide="sparkles" class="w-8 h-8 text-sky mx-auto mb-2"></span>
+        <p class="text-sm text-ocean/60">Run AI analysis to extract topics, definitions, and formulas automatically.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Sidebar: quiz sets + revision -->
+    <div class="flex flex-col gap-5">
+      <div class="card p-5 fade-up">
+        <h2 class="font-display text-base font-semibold text-deep mb-3">Quiz sets</h2>
+        {% if quiz_sets %}
+        <div class="flex flex-col gap-2">
+          {% for q in quiz_sets[:5] %}
+          <a href="{{ url_for('take_quiz', quiz_id=q.id) }}" class="flex items-center justify-between p-2.5 rounded-lg hover:bg-mist transition-colors text-sm">
+            <span class="truncate">{{ q.title }}</span>
+            <span class="chip shrink-0">{{ q.difficulty }}</span>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-xs text-ocean/50">No quizzes yet.</p>
+        {% endif %}
+      </div>
+
+      <a href="{{ url_for('revision_mode', pdf_id=pdf.id) }}" class="card card-hover p-5 bg-gradient-to-br from-coral/10 to-white fade-up">
+        <span data-lucide="rotate-ccw" class="w-5 h-5 text-coral mb-2 block"></span>
+        <div class="font-semibold text-sm text-ink mb-0.5">Revision mode</div>
+        <div class="text-xs text-ocean/60">Quiz yourself on weak topics only</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+function onFlashcardsGenerated(data) {
+  showToast(`Generated ${data.count} flashcards!`, 'success');
+  setTimeout(() => window.location.href = "{{ url_for('flashcards_page', pdf_id=pdf.id) }}", 700);
+}
+</script>
+{% endblock %}

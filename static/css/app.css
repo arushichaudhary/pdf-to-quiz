@@ -1,0 +1,111 @@
+/* ---------- Base ---------- */
+::selection { background: #9DC6EC; color: #1F3A52; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #9DC6EC; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #5B8DBF; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ---------- Nav ---------- */
+.nav-link {
+  display: flex; align-items: center; gap: 0.65rem;
+  padding: 0.6rem 0.75rem; border-radius: 0.75rem;
+  color: #2E5C8A; opacity: 0.62;
+  transition: background-color .2s ease, opacity .2s ease, transform .15s ease;
+}
+.nav-link:hover { background: #D7E8F8; opacity: 1; transform: translateX(2px); }
+.nav-link-active { background: #5B8DBF; color: white; opacity: 1; box-shadow: 0 6px 16px -4px rgba(91,141,191,0.5); }
+.nav-link-active:hover { transform: none; background: #5B8DBF; }
+
+/* ---------- Page transitions ---------- */
+.fade-up { opacity: 0; transform: translateY(10px); animation: fadeUp .5s ease forwards; }
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+.stagger > * { opacity: 0; animation: fadeUp .5s ease forwards; }
+.stagger > *:nth-child(1) { animation-delay: .02s; }
+.stagger > *:nth-child(2) { animation-delay: .08s; }
+.stagger > *:nth-child(3) { animation-delay: .14s; }
+.stagger > *:nth-child(4) { animation-delay: .20s; }
+.stagger > *:nth-child(5) { animation-delay: .26s; }
+.stagger > *:nth-child(6) { animation-delay: .32s; }
+.stagger > *:nth-child(n+7) { animation-delay: .36s; }
+
+/* ---------- Cards ---------- */
+.card {
+  background: white; border: 1px solid rgba(157,198,236,0.4);
+  border-radius: 1.25rem; transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
+}
+.card-hover:hover { box-shadow: 0 12px 32px -8px rgba(46,92,138,0.22); transform: translateY(-3px); border-color: #9DC6EC; }
+
+.btn-primary {
+  background: linear-gradient(135deg, #5B8DBF, #2E5C8A);
+  color: white; font-weight: 600; border-radius: 0.85rem;
+  padding: 0.65rem 1.4rem; transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+  box-shadow: 0 6px 18px -4px rgba(46,92,138,0.4);
+}
+.btn-primary:hover { transform: translateY(-2px); filter: brightness(1.06); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  background: white; color: #2E5C8A; font-weight: 600; border-radius: 0.85rem;
+  padding: 0.65rem 1.4rem; border: 1.5px solid #D7E8F8; transition: all .15s ease;
+}
+.btn-secondary:hover { border-color: #9DC6EC; background: #EAF2FB; transform: translateY(-1px); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.3rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;
+  background: #EAF2FB; color: #2E5C8A; border: 1px solid #D7E8F8;
+}
+
+/* ---------- Flashcard flip ---------- */
+.flip-card { perspective: 1400px; }
+.flip-card-inner {
+  position: relative; width: 100%; height: 100%;
+  transition: transform .55s cubic-bezier(.2,.85,.4,1); transform-style: preserve-3d;
+}
+.flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+.flip-face {
+  position: absolute; inset: 0; backface-visibility: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: 1.25rem; padding: 2rem; text-align: center;
+}
+.flip-front { background: linear-gradient(160deg, #ffffff, #EAF2FB); border: 1.5px solid #D7E8F8; }
+.flip-back { background: linear-gradient(160deg, #5B8DBF, #2E5C8A); color: white; transform: rotateY(180deg); }
+
+/* ---------- Misc ---------- */
+.progress-track { background: #D7E8F8; border-radius: 9999px; overflow: hidden; }
+.progress-fill { background: linear-gradient(90deg, #9DC6EC, #5B8DBF); border-radius: 9999px; transition: width .6s cubic-bezier(.2,.8,.3,1); }
+
+.upload-zone {
+  border: 2px dashed #9DC6EC; border-radius: 1.5rem; transition: border-color .2s, background-color .2s;
+}
+.upload-zone.dragover { border-color: #5B8DBF; background: #EAF2FB; }
+
+@keyframes pulse-soft { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+.pulse-flame { animation: pulse-soft 2s ease-in-out infinite; }
+
+.nest-spinner { width: 56px; height: 56px; animation: spin 1.4s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.skeleton { background: linear-gradient(90deg, #EAF2FB 25%, #D7E8F8 50%, #EAF2FB 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+.prose-notes h2 { font-family: 'Fraunces', serif; font-weight: 600; color: #2E5C8A; font-size: 1.15rem; margin-top: 1.4rem; margin-bottom: .5rem; }
+.prose-notes ul { list-style: disc; margin-left: 1.25rem; margin-bottom: .75rem; }
+.prose-notes li { margin-bottom: .3rem; }
+.prose-notes strong { color: #1F3A52; }
+.prose-notes p { margin-bottom: .75rem; line-height: 1.65; }
+
+.badge-shine {
+  position: relative; overflow: hidden;
+}
+.badge-shine::after {
+  content: ''; position: absolute; top: -50%; left: -60%; width: 40%; height: 200%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.55), transparent);
+  transform: rotate(20deg); animation: shine 3.2s ease-in-out infinite;
+}
+@keyframes shine { 0% { left: -60%; } 50%,100% { left: 130%; } }

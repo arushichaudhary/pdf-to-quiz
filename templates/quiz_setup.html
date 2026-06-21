@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}New Quiz — Studynest{% endblock %}
+{% block content %}
+
+<div class="px-10 py-9 max-w-3xl">
+  <a href="{{ url_for('pdf_detail', pdf_id=pdf.id) }}" class="inline-flex items-center gap-1.5 text-sm text-ocean/70 hover:text-deep mb-5 transition-colors">
+    <span data-lucide="arrow-left" class="w-4 h-4"></span> Back to {{ pdf.title }}
+  </a>
+
+  <h1 class="font-display text-2xl font-semibold text-deep tracking-tight mb-1 fade-up">Build your quiz</h1>
+  <p class="text-ocean/70 mb-7 fade-up">Customize difficulty, question types, and length.</p>
+
+  {% if error %}
+  <div class="p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600 mb-5">{{ error }}</div>
+  {% endif %}
+
+  <form method="POST" id="quiz-form" class="card p-7 fade-up">
+
+    <h3 class="text-sm font-semibold text-ink mb-3">Difficulty level</h3>
+    <div class="grid grid-cols-3 gap-3 mb-7">
+      {% for level, desc in [('easy','Recall & basics'), ('medium','Applied understanding'), ('hard','Deep analysis')] %}
+      <label class="diff-option cursor-pointer">
+        <input type="radio" name="difficulty" value="{{ level }}" class="hidden" {{ 'checked' if level == 'medium' else '' }}>
+        <div class="p-4 rounded-xl border-2 border-panel transition-all text-center">
+          <div class="font-semibold text-sm text-ink capitalize">{{ level }}</div>
+          <div class="text-xs text-ocean/60 mt-0.5">{{ desc }}</div>
+        </div>
+      </label>
+      {% endfor %}
+    </div>
+
+    <h3 class="text-sm font-semibold text-ink mb-3">Question types</h3>
+    <div class="grid grid-cols-2 gap-3 mb-7">
+      {% for val, label, icon in [
+        ('mcq','Multiple Choice','circle-dot'),
+        ('true_false','True / False','check-square'),
+        ('fill_blank','Fill in the Blank','pencil-line'),
+        ('match','Match the Following','git-compare'),
+        ('short_answer','Short Answer','message-square-text'),
+      ] %}
+      <label class="type-option cursor-pointer">
+        <input type="checkbox" name="q_types" value="{{ val }}" class="hidden" {{ 'checked' if val == 'mcq' else '' }}>
+        <div class="flex items-center gap-3 p-3.5 rounded-xl border-2 border-panel transition-all">
+          <span data-lucide="{{ icon }}" class="w-4 h-4 text-ocean shrink-0"></span>
+          <span class="text-sm font-medium text-ink">{{ label }}</span>
+        </div>
+      </label>
+      {% endfor %}
+    </div>
+
+    <h3 class="text-sm font-semibold text-ink mb-3">Number of questions</h3>
+    <div class="flex items-center gap-4 mb-8">
+      <input type="range" name="count" min="4" max="20" value="8" id="count-slider" class="flex-1 accent-ocean">
+      <span id="count-display" class="font-mono font-semibold text-deep w-10 text-center">8</span>
+    </div>
+
+    <button type="submit" id="submit-btn" class="btn-primary w-full flex items-center justify-center gap-2">
+      <span data-lucide="sparkles" class="w-4 h-4"></span> Generate quiz
+    </button>
+  </form>
+</div>
+
+<style>
+.diff-option input:checked + div { border-color: #5B8DBF; background: #EAF2FB; }
+.type-option input:checked + div { border-color: #5B8DBF; background: #EAF2FB; }
+</style>
+
+<script>
+const slider = document.getElementById('count-slider');
+const display = document.getElementById('count-display');
+slider.addEventListener('input', () => display.textContent = slider.value);
+
+document.getElementById('quiz-form').addEventListener('submit', (e) => {
+  const checked = document.querySelectorAll('input[name="q_types"]:checked');
+  if (!checked.length) {
+    e.preventDefault();
+    showToast('Select at least one question type.', 'error');
+    return;
+  }
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg> Generating with AI…`;
+  btn.classList.add('flex','items-center','justify-center','gap-2');
+});
+</script>
+{% endblock %}

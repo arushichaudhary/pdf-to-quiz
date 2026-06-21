@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Studynest{% endblock %}
+{% block content %}
+
+<div class="px-10 py-9 max-w-6xl">
+
+  <!-- Hero -->
+  <div class="flex items-end justify-between mb-8 fade-up">
+    <div>
+      <p class="text-ocean/70 font-medium text-sm mb-1">Welcome back</p>
+      <h1 class="font-display text-[2.1rem] font-semibold text-deep tracking-tight">Your study nest is ready.</h1>
+    </div>
+    <a href="{{ url_for('library') }}" class="btn-primary inline-flex items-center gap-2">
+      <span data-lucide="upload" class="w-4 h-4"></span> Upload material
+    </a>
+  </div>
+
+  <!-- Stat strip -->
+  <div class="grid grid-cols-4 gap-4 mb-8 stagger">
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold text-ocean/60 uppercase tracking-wide">PDFs uploaded</span>
+        <span data-lucide="library" class="w-4 h-4 text-sky"></span>
+      </div>
+      <div class="font-display text-3xl font-semibold text-deep">{{ pdfs|length }}</div>
+    </div>
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold text-ocean/60 uppercase tracking-wide">Quizzes done</span>
+        <span data-lucide="check-circle-2" class="w-4 h-4 text-sky"></span>
+      </div>
+      <div class="font-display text-3xl font-semibold text-deep">{{ total_attempts }}</div>
+    </div>
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold text-ocean/60 uppercase tracking-wide">Average score</span>
+        <span data-lucide="target" class="w-4 h-4 text-sky"></span>
+      </div>
+      <div class="font-display text-3xl font-semibold text-deep">{{ avg_score }}<span class="text-lg text-ocean/50">%</span></div>
+    </div>
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold text-ocean/60 uppercase tracking-wide">Day streak</span>
+        <span data-lucide="flame" class="w-4 h-4 text-coral pulse-flame"></span>
+      </div>
+      <div class="font-display text-3xl font-semibold text-deep">{{ state.current_streak }}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-6">
+    <!-- Recent PDFs -->
+    <div class="col-span-2 card p-6 fade-up">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display text-lg font-semibold text-deep">Your library</h2>
+        <a href="{{ url_for('library') }}" class="text-sm font-medium text-ocean hover:text-deep transition-colors">View all →</a>
+      </div>
+
+      {% if pdfs %}
+      <div class="flex flex-col gap-2">
+        {% for pdf in pdfs[:5] %}
+        <a href="{{ url_for('pdf_detail', pdf_id=pdf.id) }}" class="flex items-center gap-3.5 p-3 rounded-xl hover:bg-mist transition-colors group">
+          <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-sky to-ocean flex items-center justify-center shrink-0 shadow-soft">
+            <span data-lucide="file-text" class="w-5 h-5 text-white"></span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium text-sm text-ink truncate">{{ pdf.title }}</div>
+            <div class="text-xs text-ocean/60">{{ pdf.page_count }} pages · {{ pdf.word_count }} words</div>
+          </div>
+          <span data-lucide="chevron-right" class="w-4 h-4 text-ocean/40 group-hover:translate-x-1 transition-transform"></span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-10">
+        <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-mist flex items-center justify-center">
+          <span data-lucide="file-plus" class="w-6 h-6 text-ocean/50"></span>
+        </div>
+        <p class="text-sm text-ocean/60 mb-4">No PDFs yet — upload your first one to get started.</p>
+        <a href="{{ url_for('library') }}" class="btn-primary inline-flex items-center gap-2 text-sm">
+          <span data-lucide="upload" class="w-4 h-4"></span> Upload a PDF
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Level / streak card -->
+    <div class="card p-6 fade-up bg-gradient-to-br from-white to-mist">
+      <h2 class="font-display text-lg font-semibold text-deep mb-4">Level {{ state.level }}</h2>
+      <div class="progress-track h-2.5 mb-1.5">
+        <div class="progress-fill h-full" style="width:{{ progress_pct }}%"></div>
+      </div>
+      <div class="flex justify-between text-xs text-ocean/60 font-mono mb-5">
+        <span>{{ state.xp }} XP</span>
+        <span>{{ next_level_xp }} XP</span>
+      </div>
+
+      <div class="flex items-center gap-2.5 mb-5 p-3 rounded-xl bg-white/70 border border-coral/30">
+        <span data-lucide="flame" class="w-5 h-5 text-coral"></span>
+        <div>
+          <div class="text-sm font-semibold text-ink">{{ state.current_streak }}-day streak</div>
+          <div class="text-xs text-ocean/60">Longest: {{ state.longest_streak }} days</div>
+        </div>
+      </div>
+
+      <a href="{{ url_for('progress_page') }}" class="btn-secondary w-full flex items-center justify-center gap-2 text-sm">
+        <span data-lucide="award" class="w-4 h-4"></span> View achievements
+      </a>
+    </div>
+  </div>
+
+  <!-- Recent quiz activity -->
+  {% if attempts %}
+  <div class="card p-6 mt-6 fade-up">
+    <h2 class="font-display text-lg font-semibold text-deep mb-4">Recent quiz activity</h2>
+    <div class="grid grid-cols-4 gap-3">
+      {% for a in attempts[:4] %}
+      <a href="{{ url_for('quiz_result', attempt_id=a.id) }}" class="card card-hover p-4 block">
+        <div class="flex items-center justify-between mb-2">
+          <span class="chip">{{ a.score }}/{{ a.total }}</span>
+          <span class="text-xs text-ocean/50">{{ a.created_at[:10] }}</span>
+        </div>
+        <div class="progress-track h-1.5">
+          <div class="progress-fill h-full" style="width:{{ (100*a.score/a.total)|round|int if a.total else 0 }}%"></div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Studynest{% endblock %}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/icon.svg') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          mist:'#EAF2FB', panel:'#D7E8F8', sky:'#9DC6EC',
+          ocean:'#5B8DBF', deep:'#2E5C8A', coral:'#F4A875', ink:'#1F3A52',
+        },
+        fontFamily: { display:['Fraunces','serif'], body:['Inter','sans-serif'] },
+        boxShadow: { soft:'0 4px 24px -4px rgba(46,92,138,0.12)', lift:'0 12px 32px -8px rgba(46,92,138,0.22)' },
+        borderRadius: { 'xl2':'1.25rem' },
+      }
+    }
+  }
+</script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="bg-gradient-to-br from-mist via-panel/60 to-sky/20 font-body text-ink antialiased min-h-screen flex items-center justify-center p-4">
+
+  <div class="w-full max-w-md">
+    <!-- Logo -->
+    <div class="flex items-center justify-center gap-2.5 mb-8">
+      <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="Studynest" class="w-10 h-10">
+      <div class="leading-none">
+        <div class="font-display font-semibold text-xl text-deep tracking-tight">Studynest</div>
+        <div class="text-[10px] uppercase tracking-[0.18em] text-ocean/60 font-medium">Learning Assistant</div>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lift border border-sky/30 p-8">
+      {% block card %}{% endblock %}
+    </div>
+  </div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>lucide.createIcons();</script>
+<script>
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  if(inp.type === 'password') {
+    inp.type = 'text';
+    btn.innerHTML = '<span data-lucide="eye-off" class="w-4 h-4"></span>';
+  } else {
+    inp.type = 'password';
+    btn.innerHTML = '<span data-lucide="eye" class="w-4 h-4"></span>';
+  }
+  lucide.createIcons();
+}
+</script>
+</body>
+</html>

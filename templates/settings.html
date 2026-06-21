@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Settings — Studynest{% endblock %}
+{% block content %}
+
+<div class="px-10 py-9 max-w-2xl">
+
+  <h1 class="font-display text-2xl font-semibold text-deep tracking-tight mb-1 fade-up">Settings</h1>
+  <p class="text-ocean/70 mb-7 fade-up">Connect your own AI key to power quiz generation, flashcards, the tutor, and notes.</p>
+
+  {% if saved %}
+  <div class="p-4 rounded-xl bg-green-50 border border-green-200 text-sm text-green-700 mb-5 flex items-center gap-2 fade-up">
+    <span data-lucide="check-circle" class="w-4 h-4"></span> Settings saved.
+  </div>
+  {% endif %}
+
+  <form method="POST" class="card p-7 fade-up">
+    <h3 class="text-sm font-semibold text-ink mb-3">AI provider</h3>
+    <div class="grid grid-cols-3 gap-3 mb-6">
+      <label class="provider-option cursor-pointer">
+        <input type="radio" name="api_provider" value="anthropic" class="hidden" {{ 'checked' if state.api_provider == 'anthropic' or not state.api_provider else '' }}>
+        <div class="p-4 rounded-xl border-2 border-panel transition-all">
+          <div class="font-semibold text-sm text-ink">Anthropic</div>
+          <div class="text-xs text-ocean/60">Claude models</div>
+        </div>
+      </label>
+      <label class="provider-option cursor-pointer">
+        <input type="radio" name="api_provider" value="openai" class="hidden" {{ 'checked' if state.api_provider == 'openai' else '' }}>
+        <div class="p-4 rounded-xl border-2 border-panel transition-all">
+          <div class="font-semibold text-sm text-ink">OpenAI</div>
+          <div class="text-xs text-ocean/60">GPT models</div>
+        </div>
+      </label>
+      <label class="provider-option cursor-pointer">
+        <input type="radio" name="api_provider" value="gemini" class="hidden" {{ 'checked' if state.api_provider == 'gemini' else '' }}>
+        <div class="p-4 rounded-xl border-2 border-panel transition-all">
+          <div class="font-semibold text-sm text-ink">Gemini</div>
+          <div class="text-xs text-ocean/60">Google, free tier available</div>
+        </div>
+      </label>
+    </div>
+
+    <h3 class="text-sm font-semibold text-ink mb-2">API key</h3>
+    <p class="text-xs text-ocean/60 mb-3">Stored locally in your app's database only — never sent anywhere except directly to your chosen provider.</p>
+    <div class="relative mb-6">
+      <input type="password" name="api_key" id="api-key-input" value="{{ state.api_key }}" placeholder="sk-…"
+        class="w-full p-3.5 pr-12 rounded-xl border-2 border-panel focus:border-ocean outline-none transition-colors font-mono text-sm">
+      <button type="button" onclick="toggleKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-ocean/50 hover:text-ocean">
+        <span data-lucide="eye" class="w-4 h-4" id="eye-icon"></span>
+      </button>
+    </div>
+
+    <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2">
+      <span data-lucide="save" class="w-4 h-4"></span> Save settings
+    </button>
+  </form>
+
+  <div class="card p-6 mt-6 fade-up">
+    <h3 class="text-sm font-semibold text-ink mb-2 flex items-center gap-2">
+      <span data-lucide="info" class="w-4 h-4 text-ocean"></span> Where to get a key
+    </h3>
+    <p class="text-sm text-ocean/70 leading-relaxed">
+      Anthropic keys: <span class="font-mono text-xs bg-mist px-1.5 py-0.5 rounded">console.anthropic.com</span> → API Keys.<br>
+      OpenAI keys: <span class="font-mono text-xs bg-mist px-1.5 py-0.5 rounded">platform.openai.com</span> → API Keys.<br>
+      Gemini keys: <span class="font-mono text-xs bg-mist px-1.5 py-0.5 rounded">aistudio.google.com/apikey</span> → Create API key. Gemini's free tier works without adding a payment method.
+    </p>
+  </div>
+</div>
+
+<style>.provider-option input:checked + div { border-color: #5B8DBF; background: #EAF2FB; }</style>
+<script>
+function toggleKey() {
+  const input = document.getElementById('api-key-input');
+  const icon = document.getElementById('eye-icon');
+  input.type = input.type === 'password' ? 'text' : 'password';
+  icon.setAttribute('data-lucide', input.type === 'password' ? 'eye' : 'eye-off');
+  lucide.createIcons();
+}
+</script>
+{% endblock %}

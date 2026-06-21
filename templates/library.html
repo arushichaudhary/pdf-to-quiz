@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Library — Studynest{% endblock %}
+{% block content %}
+
+<div class="px-10 py-9 max-w-6xl">
+
+  <div class="mb-7 fade-up">
+    <h1 class="font-display text-[2.1rem] font-semibold text-deep tracking-tight mb-1">Library</h1>
+    <p class="text-ocean/70">Upload notes, textbook chapters, or slides to get started.</p>
+  </div>
+
+  <!-- Upload zone -->
+  <form id="upload-form" class="upload-zone p-10 mb-8 text-center cursor-pointer fade-up" style="animation-delay:.05s">
+    <input type="file" id="pdf-input" name="pdf_file" accept=".pdf" class="hidden">
+    <div id="upload-idle">
+      <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-white flex items-center justify-center shadow-soft">
+        <span data-lucide="upload-cloud" class="w-7 h-7 text-ocean"></span>
+      </div>
+      <p class="font-medium text-ink mb-1">Drop your PDF here, or click to browse</p>
+      <p class="text-sm text-ocean/60">Notes, textbook chapters, or slide decks · up to 32MB</p>
+    </div>
+    <div id="upload-busy" class="hidden">
+      <img src="{{ url_for('static', filename='img/icon.svg') }}" class="nest-spinner mx-auto mb-3">
+      <p class="font-medium text-ink">Reading your document…</p>
+    </div>
+  </form>
+
+  {% if pdfs %}
+  <div class="grid grid-cols-3 gap-5 stagger">
+    {% for pdf in pdfs %}
+    <a href="{{ url_for('pdf_detail', pdf_id=pdf.id) }}" class="card card-hover p-5 block">
+      <div class="flex items-start justify-between mb-4">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-sky to-ocean flex items-center justify-center shadow-soft">
+          <span data-lucide="file-text" class="w-5 h-5 text-white"></span>
+        </div>
+        <button onclick="event.preventDefault(); event.stopPropagation(); deletePdf('{{ pdf.id }}')" class="text-ocean/30 hover:text-red-400 transition-colors p-1">
+          <span data-lucide="trash-2" class="w-4 h-4"></span>
+        </button>
+      </div>
+      <h3 class="font-semibold text-ink mb-1.5 leading-snug">{{ pdf.title }}</h3>
+      <p class="text-xs text-ocean/60 mb-3">{{ pdf.page_count }} pages · {{ pdf.word_count }} words</p>
+      <div class="flex items-center gap-1.5 text-xs text-ocean/50">
+        <span data-lucide="clock" class="w-3.5 h-3.5"></span>
+        {{ pdf.created_at[:10] }}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-16 fade-up">
+    <p class="text-ocean/50 text-sm">Your uploaded documents will appear here.</p>
+  </div>
+  {% endif %}
+</div>
+
+<form id="delete-form" method="POST" class="hidden"></form>
+
+<script>
+const dropzone = document.getElementById('upload-form');
+const input = document.getElementById('pdf-input');
+const idle = document.getElementById('upload-idle');
+const busy = document.getElementById('upload-busy');
+
+dropzone.addEventListener('click', (e) => { if (e.target.tagName !== 'INPUT') input.click(); });
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) {
+    input.files = e.dataTransfer.files;
+    handleUpload();
+  }
+});
+input.addEventListener('change', handleUpload);
+
+async function handleUpload() {
+  if (!input.files.length) return;
+  idle.classList.add('hidden');
+  busy.classList.remove('hidden');
+
+  const formData = new FormData();
+  formData.append('pdf_file', input.files[0]);
+
+  try {
+    const resp = await fetch("{{ url_for('upload') }}", { method: 'POST', body: formData });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Upload failed.');
+    window.location.href = data.redirect;
+  } catch (err) {
+    showToast(err.message, 'error');
+    idle.classList.remove('hidden');
+    busy.classList.add('hidden');
+  }
+}
+
+function deletePdf(id) {
+  if (!confirm('Delete this PDF and all its quizzes, flashcards, and notes?')) return;
+  const form = document.getElementById('delete-form');
+  form.action = `/pdf/${id}/delete`;
+  form.submit();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Flashcards — Studynest{% endblock %}
+{% block content %}
+
+<div class="px-10 py-9 max-w-4xl">
+
+  <div class="flex items-center justify-between mb-7 fade-up">
+    <div>
+      <h1 class="font-display text-2xl font-semibold text-deep tracking-tight mb-1">Flashcards</h1>
+      <p class="text-ocean/70">{% if pdf %}From {{ pdf.title }}{% else %}All your flashcards in one place{% endif %}</p>
+    </div>
+    {% if pdfs %}
+    <select onchange="window.location.href = this.value ? `/flashcards/${this.value}` : '/flashcards'" class="p-2.5 rounded-xl border-2 border-panel text-sm font-medium outline-none focus:border-ocean">
+      <option value="">All documents</option>
+      {% for p in pdfs %}
+      <option value="{{ p.id }}" {{ 'selected' if pdf and pdf.id == p.id else '' }}>{{ p.title }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+  </div>
+
+  {% if cards %}
+  <!-- Stats -->
+  <div class="flex gap-3 mb-7 fade-up">
+    <div class="chip"><span data-lucide="layers" class="w-3.5 h-3.5"></span> {{ cards|length }} cards</div>
+    <div class="chip"><span data-lucide="check" class="w-3.5 h-3.5"></span> {{ cards|selectattr('learned')|list|length }} learned</div>
+    <div class="chip"><span data-lucide="bookmark" class="w-3.5 h-3.5"></span> {{ cards|selectattr('bookmarked')|list|length }} bookmarked</div>
+  </div>
+
+  <!-- Card viewer -->
+  <div class="flex items-center gap-4 mb-6">
+    <button id="prev-card" class="w-11 h-11 rounded-full bg-white border-2 border-panel hover:border-ocean flex items-center justify-center transition-colors shrink-0">
+      <span data-lucide="chevron-left" class="w-5 h-5 text-ocean"></span>
+    </button>
+
+    <div class="flex-1">
+      <div class="flip-card h-72 cursor-pointer" id="flip-card" onclick="flipCard()">
+        <div class="flip-card-inner w-full h-full">
+          <div class="flip-face flip-front shadow-soft">
+            <span class="text-xs font-semibold uppercase tracking-wide text-ocean/50 mb-3" id="card-topic"></span>
+            <p class="font-display text-xl font-medium text-ink" id="card-front"></p>
+            <span class="text-xs text-ocean/40 mt-4">Click to flip</span>
+          </div>
+          <div class="flip-face flip-back shadow-lift">
+            <span class="text-xs font-semibold uppercase tracking-wide text-white/60 mb-3">Answer</span>
+            <p class="text-base leading-relaxed" id="card-back"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button id="next-card" class="w-11 h-11 rounded-full bg-white border-2 border-panel hover:border-ocean flex items-center justify-center transition-colors shrink-0">
+      <span data-lucide="chevron-right" class="w-5 h-5 text-ocean"></span>
+    </button>
+  </div>
+
+  <div class="flex items-center justify-between mb-10">
+    <span class="text-sm text-ocean/60" id="card-counter"></span>
+    <div class="flex gap-2.5">
+      <button id="bookmark-btn" class="btn-secondary text-sm flex items-center gap-1.5">
+        <span data-lucide="bookmark" class="w-4 h-4"></span> Bookmark
+      </button>
+      <button id="learned-btn" class="btn-primary text-sm flex items-center gap-1.5">
+        <span data-lucide="check" class="w-4 h-4"></span> Mark as learned
+      </button>
+    </div>
+  </div>
+
+  <!-- Grid of all cards -->
+  <h2 class="font-display text-lg font-semibold text-deep mb-4">All cards</h2>
+  <div class="grid grid-cols-3 gap-4 stagger" id="cards-grid">
+    {% for c in cards %}
+    <div class="card p-4 cursor-pointer" onclick="jumpTo({{ loop.index0 }})">
+      <div class="flex items-center justify-between mb-2">
+        <span class="chip">{{ c.topic or 'General' }}</span>
+        <div class="flex gap-1">
+          {% if c.learned %}<span data-lucide="check-circle" class="w-4 h-4 text-green-500"></span>{% endif %}
+          {% if c.bookmarked %}<span data-lucide="bookmark" class="w-4 h-4 text-coral"></span>{% endif %}
+        </div>
+      </div>
+      <p class="text-sm font-medium text-ink line-clamp-2">{{ c.front }}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="card p-12 text-center fade-up">
+    <span data-lucide="layers" class="w-10 h-10 text-sky mx-auto mb-3"></span>
+    <p class="text-ocean/60 mb-5">{% if pdf %}No flashcards yet for this document.{% else %}No flashcards yet — generate some from a document.{% endif %}</p>
+    <a href="{{ url_for('library') }}" class="btn-primary inline-flex items-center gap-2">
+      <span data-lucide="library" class="w-4 h-4"></span> Go to library
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+const cards = {{ cards|tojson }};
+let idx = 0;
+let flipped = false;
+
+function renderCard() {
+  if (!cards.length) return;
+  const c = cards[idx];
+  document.getElementById('card-topic').textContent = c.topic || 'General';
+  document.getElementById('card-front').textContent = c.front;
+  document.getElementById('card-back').textContent = c.back;
+  document.getElementById('card-counter').textContent = `Card ${idx + 1} of ${cards.length}`;
+  document.getElementById('flip-card').classList.remove('flipped');
+  flipped = false;
+  updateButtons();
+}
+
+function updateButtons() {
+  const c = cards[idx];
+  const learnedBtn = document.getElementById('learned-btn');
+  const bookmarkBtn = document.getElementById('bookmark-btn');
+  learnedBtn.innerHTML = c.learned
+    ? `<span data-lucide="check-circle" class="w-4 h-4"></span> Learned`
+    : `<span data-lucide="check" class="w-4 h-4"></span> Mark as learned`;
+  bookmarkBtn.innerHTML = c.bookmarked
+    ? `<span data-lucide="bookmark-check" class="w-4 h-4"></span> Bookmarked`
+    : `<span data-lucide="bookmark" class="w-4 h-4"></span> Bookmark`;
+  lucide.createIcons();
+}
+
+function flipCard() {
+  flipped = !flipped;
+  document.getElementById('flip-card').classList.toggle('flipped', flipped);
+}
+
+function jumpTo(i) { idx = i; renderCard(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+
+document.getElementById('next-card').addEventListener('click', () => { idx = (idx + 1) % cards.length; renderCard(); });
+document.getElementById('prev-card').addEventListener('click', () => { idx = (idx - 1 + cards.length) % cards.length; renderCard(); });
+
+async function toggleField(field) {
+  const c = cards[idx];
+  const resp = await fetch(`/flashcards/${c.id}/toggle`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({field})
+  });
+  const data = await resp.json();
+  c[field] = data.value;
+  updateButtons();
+}
+document.getElementById('learned-btn').addEventListener('click', () => toggleField('learned'));
+document.getElementById('bookmark-btn').addEventListener('click', () => toggleField('bookmarked'));
+
+if (cards.length) renderCard();
+</script>
+{% endblock %}

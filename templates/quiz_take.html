@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} — Studynest{% endblock %}
+{% block content %}
+
+<div class="px-10 py-9 max-w-3xl">
+
+  <div class="flex items-center justify-between mb-6 fade-up">
+    <div>
+      <h1 class="font-display text-xl font-semibold text-deep tracking-tight">{{ quiz.title }}</h1>
+      <p class="text-sm text-ocean/60" id="progress-label">Question 1 of {{ questions|length }}</p>
+    </div>
+    <div id="timer-display" class="hidden chip text-base px-4 py-2">
+      <span data-lucide="timer" class="w-4 h-4"></span>
+      <span id="timer-text">10:00</span>
+    </div>
+  </div>
+
+  <div class="progress-track h-1.5 mb-8">
+    <div class="progress-fill h-full" id="quiz-progress" style="width: {{ (100/questions|length)|round|int }}%"></div>
+  </div>
+
+  <div id="quiz-container"></div>
+
+  <div class="flex items-center justify-between mt-7">
+    <button id="prev-btn" class="btn-secondary hidden">Previous</button>
+    <div class="flex-1"></div>
+    <button id="next-btn" class="btn-primary">Next question</button>
+    <button id="submit-btn" class="btn-primary hidden">Submit quiz</button>
+  </div>
+</div>
+
+<script>
+const questions = {{ q_json|safe }};
+const quizId = "{{ quiz.id }}";
+let current = 0;
+const answers = {};
+let startTime = Date.now();
+
+const timed = "{{ timed }}" === "1";
+let timeLeft = {{ time_limit|int }} * 60;
+let timerInterval;
+
+if (timed) {
+  document.getElementById('timer-display').classList.remove('hidden');
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+    document.getElementById('timer-text').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (timeLeft <= 30) document.getElementById('timer-display').style.background = '#FEE2E2';
+    if (timeLeft <= 0) { clearInterval(timerInterval); submitQuiz(); }
+  }, 1000);
+}
+
+function renderQuestion() {
+  const q = questions[current];
+  const container = document.getElementById('quiz-container');
+  let html = `<div class="card p-7 fade-up">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="chip">${q.topic || 'General'}</span>
+      <span class="chip" style="background:#F4A875;color:white;border:none;">${(q.type||'').replace('_',' ')}</span>
+    </div>
+    <h2 class="font-display text-lg font-medium text-ink mb-5 leading-snug">${escapeHtml(q.question || '')}</h2>`;
+
+  if (q.type === 'mcq') {
+    html += `<div class="flex flex-col gap-2.5">`;
+    (q.options || []).forEach((opt, i) => {
+      const checked = answers[current] === i;
+      html += `<label class="quiz-option cursor-pointer">
+        <input type="radio" name="opt" class="hidden" ${checked ? 'checked' : ''} onclick="selectAnswer(${i})">
+        <div class="flex items-center gap-3 p-3.5 rounded-xl border-2 ${checked ? 'border-ocean bg-mist' : 'border-panel'} transition-all">
+          <div class="w-6 h-6 rounded-full border-2 ${checked ? 'border-ocean bg-ocean' : 'border-sky'} flex items-center justify-center text-white text-xs font-bold shrink-0">${checked ? '✓' : String.fromCharCode(65+i)}</div>
+          <span class="text-sm text-ink">${escapeHtml(opt)}</span>
+        </div>
+      </label>`;
+    });
+    html += `</div>`;
+  } else if (q.type === 'true_false') {
+    html += `<div class="grid grid-cols-2 gap-3">`;
+    ['true', 'false'].forEach(val => {
+      const checked = answers[current] === val;
+      html += `<label class="cursor-pointer">
+        <input type="radio" class="hidden" onclick="selectAnswer('${val}')">
+        <div class="p-4 rounded-xl border-2 text-center font-semibold capitalize ${checked ? 'border-ocean bg-mist text-deep' : 'border-panel text-ink'} transition-all">${val}</div>
+      </label>`;
+    });
+    html += `</div>`;
+  } else if (q.type === 'fill_blank') {
+    html += `<input type="text" placeholder="Type your answer…" class="w-full p-3.5 rounded-xl border-2 border-panel focus:border-ocean outline-none transition-colors"
+      value="${escapeHtml(answers[current] || '')}" oninput="selectAnswer(this.value)">`;
+  } else if (q.type === 'short_answer') {
+    html += `<textarea placeholder="Write a short answer…" rows="4" class="w-full p-3.5 rounded-xl border-2 border-panel focus:border-ocean outline-none transition-colors resize-none"
+      oninput="selectAnswer(this.value)">${escapeHtml(answers[current] || '')}</textarea>`;
+  } else if (q.type === 'match') {
+    const pairs = q.pairs || [];
+    const rightOptions = pairs.map(p => p.right);
+    const userMap = answers[current] || {};
+    html += `<div class="flex flex-col gap-3">`;
+    pairs.forEach((p, i) => {
+      html += `<div class="flex items-center gap-3">
+        <div class="flex-1 p-3 rounded-xl bg-mist text-sm font-medium text-ink">${escapeHtml(p.left)}</div>
+        <span data-lucide="arrow-right" class="w-4 h-4 text-ocean/40 shrink-0"></span>
+        <select class="flex-1 p-3 rounded-xl border-2 border-panel outline-none text-sm" onchange="selectMatchAnswer('${escapeJs(p.left)}', this.value)">
+          <option value="">Choose match…</option>
+          ${rightOptions.map(r => `<option value="${escapeHtml(r)}" ${userMap[p.left] === r ? 'selected' : ''}>${escapeHtml(r)}</option>`).join('')}
+        </select>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+  lucide.createIcons();
+
+  document.getElementById('progress-label').textContent = `Question ${current + 1} of ${questions.length}`;
+  document.getElementById('quiz-progress').style.width = `${Math.round(100 * (current + 1) / questions.length)}%`;
+  document.getElementById('prev-btn').classList.toggle('hidden', current === 0);
+  document.getElementById('next-btn').classList.toggle('hidden', current === questions.length - 1);
+  document.getElementById('submit-btn').classList.toggle('hidden', current !== questions.length - 1);
+}
+
+function selectAnswer(val) { answers[current] = val; if (questions[current].type !== 'fill_blank' && questions[current].type !== 'short_answer') renderQuestion(); }
+function selectMatchAnswer(left, right) {
+  if (!answers[current]) answers[current] = {};
+  answers[current][left] = right;
+}
+
+function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function escapeJs(s) { return String(s).replace(/'/g, "\\'"); }
+
+document.getElementById('next-btn').addEventListener('click', () => { if (current < questions.length - 1) { current++; renderQuestion(); } });
+document.getElementById('prev-btn').addEventListener('click', () => { if (current > 0) { current--; renderQuestion(); } });
+document.getElementById('submit-btn').addEventListener('click', submitQuiz);
+
+async function submitQuiz() {
+  if (timerInterval) clearInterval(timerInterval);
+  const timeTaken = Math.round((Date.now() - startTime) / 1000);
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Scoring…';
+
+  try {
+    const resp = await fetch(`/quiz/${quizId}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers, time_taken_sec: timeTaken }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Could not submit quiz.');
+    window.location.href = data.redirect;
+  } catch (err) {
+    showToast(err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Submit quiz';
+  }
+}
+
+renderQuestion();
+</script>
+{% endblock %}

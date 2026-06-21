@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}AI Tutor — Studynest{% endblock %}
+{% block content %}
+
+<div class="flex h-screen">
+  <!-- Document picker sidebar -->
+  <div class="w-72 border-r border-sky/30 bg-white/50 p-5 shrink-0 overflow-y-auto">
+    <h2 class="font-display text-base font-semibold text-deep mb-1">AI Tutor</h2>
+    <p class="text-xs text-ocean/60 mb-4">Pick a document to chat about</p>
+    <div class="flex flex-col gap-1.5">
+      {% for p in pdfs %}
+      <a href="{{ url_for('tutor_page', pdf_id=p.id) }}" class="flex items-center gap-2.5 p-2.5 rounded-lg text-sm transition-colors {{ 'bg-ocean text-white' if pdf and pdf.id == p.id else 'hover:bg-mist text-ink' }}">
+        <span data-lucide="file-text" class="w-4 h-4 shrink-0 {{ '' if pdf and pdf.id == p.id else 'text-ocean/50' }}"></span>
+        <span class="truncate">{{ p.title }}</span>
+      </a>
+      {% endfor %}
+      {% if not pdfs %}
+      <p class="text-xs text-ocean/50">Upload a PDF first.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="flex-1 flex flex-col">
+    {% if pdf %}
+    <div class="border-b border-sky/30 p-5 bg-white/50">
+      <h1 class="font-display text-lg font-semibold text-deep">{{ pdf.title }}</h1>
+      <p class="text-xs text-ocean/60">Answers are grounded only in this document</p>
+    </div>
+
+    <div id="chat-log" class="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+      {% if not history %}
+      <div class="card p-6 max-w-md mx-auto mt-10 text-center fade-up">
+        <span data-lucide="bot" class="w-8 h-8 text-ocean mx-auto mb-2"></span>
+        <p class="text-sm text-ocean/70">Ask anything about this document — like "Explain the OSI model" or "What's the formula for X?"</p>
+      </div>
+      {% endif %}
+      {% for h in history %}
+        {% if h.role == 'user' %}
+        <div class="flex justify-end"><div class="bg-ocean text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-md text-sm">{{ h.content }}</div></div>
+        {% else %}
+        <div class="flex justify-start"><div class="bg-white border border-panel rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-lg text-sm text-ink whitespace-pre-wrap">{{ h.content }}</div></div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <form id="chat-form" class="p-5 border-t border-sky/30 bg-white/50 flex gap-3">
+      <input type="text" id="chat-input" placeholder="Ask about this document…" class="flex-1 p-3 rounded-xl border-2 border-panel outline-none focus:border-ocean transition-colors text-sm" autocomplete="off">
+      <button type="submit" id="chat-send" class="btn-primary px-5 flex items-center gap-2">
+        <span data-lucide="send" class="w-4 h-4"></span>
+      </button>
+    </form>
+
+    <script>
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+    const chatLog = document.getElementById('chat-log');
+    const pdfId = "{{ pdf.id }}";
+
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const question = chatInput.value.trim();
+      if (!question) return;
+      chatInput.value = '';
+
+      appendMessage('user', question);
+      const thinkingEl = appendMessage('assistant', '…', true);
+
+      try {
+        const resp = await fetch(`/tutor/${pdfId}/ask`, {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ question })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Could not get an answer.');
+        thinkingEl.textContent = data.answer;
+      } catch (err) {
+        thinkingEl.textContent = err.message;
+        thinkingEl.classList.add('text-red-500');
+      }
+    });
+
+    function appendMessage(role, text, returnEl) {
+      const wrap = document.createElement('div');
+      wrap.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+      const bubble = document.createElement('div');
+      bubble.className = role === 'user'
+        ? 'bg-ocean text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-md text-sm'
+        : 'bg-white border border-panel rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-lg text-sm text-ink whitespace-pre-wrap';
+      bubble.textContent = text;
+      wrap.appendChild(bubble);
+      chatLog.appendChild(wrap);
+      chatLog.scrollTop = chatLog.scrollHeight;
+      return bubble;
+    }
+    </script>
+
+    {% else %}
+    <div class="flex-1 flex items-center justify-center">
+      <div class="text-center max-w-sm">
+        <span data-lucide="bot" class="w-10 h-10 text-sky mx-auto mb-3"></span>
+        <p class="text-ocean/60 text-sm">Select a document from the left to start chatting with your AI tutor.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

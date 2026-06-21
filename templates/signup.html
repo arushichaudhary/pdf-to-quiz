@@ -1,0 +1,49 @@
+{% extends "base_auth.html" %}
+{% block title %}Create Account — Studynest{% endblock %}
+{% block card %}
+<div class="text-center mb-8">
+  <h1 class="font-display text-3xl font-semibold text-deep">Get started</h1>
+  <p class="text-ocean/70 mt-1 text-sm">Create your free Studynest account</p>
+</div>
+
+{% if error %}
+<div class="mb-5 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+  <span data-lucide="alert-circle" class="w-4 h-4 shrink-0"></span>{{ error }}
+</div>
+{% endif %}
+
+<form method="POST" action="{{ url_for('signup') }}" class="space-y-4">
+  <div>
+    <label class="block text-sm font-medium text-ink mb-1.5">Full name</label>
+    <input type="text" name="name" required autocomplete="name"
+      class="w-full rounded-xl border border-sky/50 bg-white/80 px-4 py-2.5 text-sm text-ink placeholder-ocean/40 focus:outline-none focus:ring-2 focus:ring-ocean/30 focus:border-ocean transition"
+      placeholder="Aayush Sharma" value="{{ name or '' }}">
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-ink mb-1.5">Email address</label>
+    <input type="email" name="email" required autocomplete="email"
+      class="w-full rounded-xl border border-sky/50 bg-white/80 px-4 py-2.5 text-sm text-ink placeholder-ocean/40 focus:outline-none focus:ring-2 focus:ring-ocean/30 focus:border-ocean transition"
+      placeholder="you@example.com" value="{{ email or '' }}">
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-ink mb-1.5">Password</label>
+    <div class="relative">
+      <input type="password" name="password" id="pw-signup" required autocomplete="new-password" minlength="8"
+        class="w-full rounded-xl border border-sky/50 bg-white/80 px-4 py-2.5 text-sm text-ink placeholder-ocean/40 focus:outline-none focus:ring-2 focus:ring-ocean/30 focus:border-ocean transition pr-10"
+        placeholder="At least 8 characters">
+      <button type="button" onclick="togglePw('pw-signup',this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-ocean/50 hover:text-ocean transition">
+        <span data-lucide="eye" class="w-4 h-4"></span>
+      </button>
+    </div>
+  </div>
+  <button type="submit"
+    class="w-full rounded-xl bg-ocean text-white font-semibold py-2.5 text-sm hover:bg-deep transition-colors shadow-soft mt-2">
+    Create account
+  </button>
+</form>
+
+<p class="text-center text-sm text-ocean/70 mt-6">
+  Already have an account?
+  <a href="{{ url_for('login') }}" class="text-ocean font-semibold hover:text-deep transition">Sign in</a>
+</p>
+{% endblock %}
